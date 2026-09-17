@@ -1,0 +1,19 @@
+{
+  "name": "Tactical Radar",
+  "short_name": "Radar",
+  "description": "Web Bluetooth tactical radar display for the HLK-LD2450 mmWave prop sensor.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#020a04",
+  "theme_color": "#020a04",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

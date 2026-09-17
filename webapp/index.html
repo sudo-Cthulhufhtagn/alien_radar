@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <title>Tactical Radar</title>
+    <meta name="description" content="Tactical mmWave radar display for the HLK-LD2450 + ESP32-C3 prop, over Web Bluetooth." />
+    <meta name="theme-color" content="#020a04" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body>
+    <div id="appShell" class="app-shell">
+      <canvas id="radarCanvas" class="radar-canvas"></canvas>
+
+      <div id="latencyReadout" class="hud-readout" hidden>-- ms</div>
+
+      <button id="linkButton" class="link-button">LINK SENSOR</button>
+
+      <div id="errorToast" class="toast" role="alert" hidden></div>
+
+      <!-- Onboarding: first run only. Acknowledging this tap also unlocks the AudioContext. -->
+      <div id="onboardingOverlay" class="overlay" aria-hidden="true">
+        <div class="overlay-card">
+          <p class="eyebrow">Tactical Radar Online</p>
+          <h1>Sensor Briefing</h1>
+          <ul class="briefing-list">
+            <li>The sensor projects a <strong>60° cone</strong> forward from the bottom of the screen.</li>
+            <li>Maximum tracked range is <strong>6 meters</strong>; adjust zoom in Settings.</li>
+            <li>The radar screen stays clean — <strong>double-tap</strong> or <strong>swipe down</strong> anywhere to reveal Settings.</li>
+          </ul>
+          <button id="acknowledgeButton" class="primary">Acknowledge</button>
+        </div>
+      </div>
+
+      <div id="settingsOverlay" class="overlay" aria-hidden="true">
+        <div class="overlay-card settings-card">
+          <div class="card-header">
+            <h2>Settings</h2>
+            <button id="settingsCloseButton" class="secondary small" aria-label="Close settings">Close</button>
+          </div>
+
+          <div class="settings-grid">
+            <label class="field">
+              Theme
+              <select id="themeSelect">
+                <option value="alien">Alien Tracker</option>
+                <option value="wh40k">Warhammer 40k</option>
+              </select>
+            </label>
+
+            <label class="field">
+              Radar range
+              <select id="rangeSelect">
+                <option value="2">2 m</option>
+                <option value="4">4 m</option>
+                <option value="6">6 m</option>
+              </select>
+            </label>
+
+            <label class="field">
+              Refresh rate — <span id="refreshRateValue">30</span> Hz
+              <input id="refreshRateSlider" type="range" min="5" max="60" step="5" />
+            </label>
+
+            <label class="field checkbox-field">
+              <input id="showLatencyCheckbox" type="checkbox" />
+              Show real latency
+            </label>
+
+            <label class="field checkbox-field">
+              <input id="advancedTrackingCheckbox" type="checkbox" />
+              Advanced tracking (vectors + speed)
+            </label>
+
+            <label class="field">
+              Speed source
+              <select id="speedSourceSelect">
+                <option value="native">Native (sensor)</option>
+                <option value="calculated">Calculated (local)</option>
+              </select>
+            </label>
+
+            <label class="field checkbox-field">
+              <input id="audioCheckbox" type="checkbox" />
+              Proximity audio
+            </label>
+          </div>
+
+          <div class="card-footer-row">
+            <span id="connectionPill" class="pill pill-off">Disconnected</span>
+            <button id="disconnectButton" class="secondary" disabled>Disconnect</button>
+            <button id="resetSettingsButton" class="secondary">Reset to Defaults</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="portraitOverlay" class="portrait-overlay" aria-hidden="true">
+        <p>Rotate Device for Tactical View</p>
+      </div>
+    </div>
+  </body>
+</html>
