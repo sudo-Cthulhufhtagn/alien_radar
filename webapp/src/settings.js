@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS = {
   advancedTracking: false,
   speedSource: 'native', // 'native' | 'calculated'
   audioEnabled: false,
+  demoMode: false, // simulate a random-walking target when no sensor is connected
 };
 
 export function loadSettings() {

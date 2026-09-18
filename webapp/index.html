@@ -26,8 +26,8 @@
       <!-- Onboarding: first run only. Acknowledging this tap also unlocks the AudioContext. -->
       <div id="onboardingOverlay" class="overlay" aria-hidden="true">
         <div class="overlay-card">
-          <p class="eyebrow">Tactical Radar Online</p>
-          <h1>Sensor Briefing</h1>
+          <p id="briefingEyebrow" class="eyebrow">Tactical Radar Online</p>
+          <h1 id="briefingTitle">Sensor Briefing</h1>
           <ul class="briefing-list">
             <li>The sensor projects a <strong>60° cone</strong> forward from the bottom of the screen.</li>
             <li>Maximum tracked range is <strong>6 meters</strong>; adjust zoom in Settings.</li>
@@ -40,7 +40,7 @@
       <div id="settingsOverlay" class="overlay" aria-hidden="true">
         <div class="overlay-card settings-card">
           <div class="card-header">
-            <h2>Settings</h2>
+            <h2 id="settingsTitle">Settings</h2>
             <button id="settingsCloseButton" class="secondary small" aria-label="Close settings">Close</button>
           </div>
 
@@ -89,6 +89,12 @@
               <input id="audioCheckbox" type="checkbox" />
               Proximity audio
             </label>
+
+            <label class="field checkbox-field">
+              <input id="demoModeCheckbox" type="checkbox" />
+              Demo mode (simulate a target)
+            </label>
+            <p class="hint">Only active while disconnected — random-walks a fake target for testing without hardware.</p>
           </div>
 
           <div class="card-footer-row">
@@ -97,10 +103,6 @@
             <button id="resetSettingsButton" class="secondary">Reset to Defaults</button>
           </div>
         </div>
-      </div>
-
-      <div id="portraitOverlay" class="portrait-overlay" aria-hidden="true">
-        <p>Rotate Device for Tactical View</p>
       </div>
     </div>
   </body>

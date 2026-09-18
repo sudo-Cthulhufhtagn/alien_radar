@@ -2,6 +2,8 @@
 // colors/behavior from these — no radar aesthetics live in CSS. Chrome UI
 // (buttons, modal) still reads the same values via CSS custom properties set
 // from applyThemeToDocument(), so the whole app stays in sync off one object.
+// `labels` re-skins the surrounding UI copy so the theme isn't just a palette
+// swap — main.js reads these for the onboarding, link button, and status text.
 
 export const THEMES = {
   alien: {
@@ -22,6 +24,18 @@ export const THEMES = {
     radarSweepStyle: 'polar',
     markerShape: 'circle',
     pulseTargets: true,
+    originStyle: 'dot',
+    edgeStyle: 'plain',
+    scanlines: false,
+    labels: {
+      briefingEyebrow: 'Tactical Radar Online',
+      briefingTitle: 'Sensor Briefing',
+      acknowledge: 'Acknowledge',
+      settingsTitle: 'Settings',
+      link: 'Link Sensor',
+      linked: 'Linked',
+      disconnected: 'Disconnected',
+    },
   },
   wh40k: {
     id: 'wh40k',
@@ -41,6 +55,18 @@ export const THEMES = {
     radarSweepStyle: 'linear',
     markerShape: 'diamond',
     pulseTargets: false,
+    originStyle: 'cog',
+    edgeStyle: 'hazard',
+    scanlines: true,
+    labels: {
+      briefingEyebrow: '+++ Adeptus Mechanicus +++',
+      briefingTitle: 'Rite of Activation',
+      acknowledge: 'By His Will',
+      settingsTitle: 'Cogitator Controls',
+      link: 'Activate Auspex',
+      linked: 'Machine-Spirit Bound',
+      disconnected: 'Auspex Offline',
+    },
   },
 };
 
@@ -51,9 +77,11 @@ export function getTheme(id) {
 }
 
 export function applyThemeToDocument(theme) {
+  document.documentElement.dataset.theme = theme.id;
   const root = document.documentElement.style;
   root.setProperty('--radar-bg', theme.backgroundColor);
   root.setProperty('--radar-accent', theme.accentColor);
+  root.setProperty('--radar-secondary', theme.dotColor);
   root.setProperty('--radar-text', theme.textColor);
   root.setProperty('--radar-grid', theme.gridColor);
   root.setProperty('--radar-warning', theme.warningColor);

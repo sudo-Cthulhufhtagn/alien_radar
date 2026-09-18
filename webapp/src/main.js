@@ -3,6 +3,7 @@ import { RadarSensor } from './ble.js';
 import { TargetTracker } from './tracking.js';
 import { AudioEngine } from './audio.js';
 import { RadarRenderer } from './radar-renderer.js';
+import { DemoSimulator } from './demo.js';
 import { getTheme, applyThemeToDocument } from './themes.js';
 import {
   loadSettings,
@@ -16,18 +17,24 @@ const canvas = document.getElementById('radarCanvas');
 const renderer = new RadarRenderer(canvas);
 const tracker = new TargetTracker();
 const audioEngine = new AudioEngine();
+const demoSim = new DemoSimulator();
 
 let settings = loadSettings();
 let latestTargets = [];
 let lastPacketAt = 0;
+let isConnected = false;
+let lastDemoTickAt = 0;
 
 const els = {
   latencyReadout: document.getElementById('latencyReadout'),
   linkButton: document.getElementById('linkButton'),
   errorToast: document.getElementById('errorToast'),
   onboardingOverlay: document.getElementById('onboardingOverlay'),
+  briefingEyebrow: document.getElementById('briefingEyebrow'),
+  briefingTitle: document.getElementById('briefingTitle'),
   acknowledgeButton: document.getElementById('acknowledgeButton'),
   settingsOverlay: document.getElementById('settingsOverlay'),
+  settingsTitle: document.getElementById('settingsTitle'),
   settingsCloseButton: document.getElementById('settingsCloseButton'),
   themeSelect: document.getElementById('themeSelect'),
   rangeSelect: document.getElementById('rangeSelect'),
@@ -37,6 +44,7 @@ const els = {
   advancedTrackingCheckbox: document.getElementById('advancedTrackingCheckbox'),
   speedSourceSelect: document.getElementById('speedSourceSelect'),
   audioCheckbox: document.getElementById('audioCheckbox'),
+  demoModeCheckbox: document.getElementById('demoModeCheckbox'),
   connectionPill: document.getElementById('connectionPill'),
   disconnectButton: document.getElementById('disconnectButton'),
   resetSettingsButton: document.getElementById('resetSettingsButton'),
@@ -53,20 +61,32 @@ function handleTargets(targets, receivedAtMs) {
   lastPacketAt = receivedAtMs;
 }
 
+function clearTargets() {
+  latestTargets = [];
+  tracker.reset();
+  lastPacketAt = 0;
+}
+
+function updateConnectionLabel() {
+  const labels = getTheme(settings.theme).labels;
+  els.connectionPill.textContent = isConnected ? labels.linked : labels.disconnected;
+  els.connectionPill.classList.toggle('pill-on', isConnected);
+  els.connectionPill.classList.toggle('pill-off', !isConnected);
+}
+
 function handleConnected() {
+  isConnected = true;
   els.linkButton.hidden = true;
-  els.connectionPill.textContent = 'Linked';
-  els.connectionPill.classList.replace('pill-off', 'pill-on');
   els.disconnectButton.disabled = false;
+  updateConnectionLabel();
 }
 
 function handleDisconnected() {
-  latestTargets = [];
-  tracker.reset();
+  isConnected = false;
+  clearTargets();
   els.linkButton.hidden = false;
-  els.connectionPill.textContent = 'Disconnected';
-  els.connectionPill.classList.replace('pill-on', 'pill-off');
   els.disconnectButton.disabled = true;
+  updateConnectionLabel();
 }
 
 let errorTimeoutId = null;
@@ -134,6 +154,18 @@ function closeSettings() {
 
 els.settingsCloseButton.addEventListener('click', closeSettings);
 
+function applyThemeLabels() {
+  const labels = getTheme(settings.theme).labels;
+  els.briefingEyebrow.textContent = labels.briefingEyebrow;
+  els.briefingTitle.textContent = labels.briefingTitle;
+  els.acknowledgeButton.textContent = labels.acknowledge;
+  els.settingsTitle.textContent = labels.settingsTitle;
+  if (!isConnected) {
+    els.linkButton.textContent = labels.link;
+  }
+  updateConnectionLabel();
+}
+
 function applySettingsToForm() {
   els.themeSelect.value = settings.theme;
   els.rangeSelect.value = String(settings.rangeM);
@@ -144,9 +176,11 @@ function applySettingsToForm() {
   els.speedSourceSelect.value = settings.speedSource;
   els.speedSourceSelect.disabled = !settings.advancedTracking;
   els.audioCheckbox.checked = settings.audioEnabled;
+  els.demoModeCheckbox.checked = settings.demoMode;
   els.latencyReadout.hidden = !settings.showLatency;
   audioEngine.setEnabled(settings.audioEnabled);
   applyThemeToDocument(getTheme(settings.theme));
+  applyThemeLabels();
 }
 
 function persist() {
@@ -156,6 +190,7 @@ function persist() {
 els.themeSelect.addEventListener('change', () => {
   settings.theme = els.themeSelect.value;
   applyThemeToDocument(getTheme(settings.theme));
+  applyThemeLabels();
   persist();
 });
 els.rangeSelect.addEventListener('change', () => {
@@ -184,6 +219,13 @@ els.speedSourceSelect.addEventListener('change', () => {
 els.audioCheckbox.addEventListener('change', () => {
   settings.audioEnabled = els.audioCheckbox.checked;
   audioEngine.setEnabled(settings.audioEnabled);
+  persist();
+});
+els.demoModeCheckbox.addEventListener('change', () => {
+  settings.demoMode = els.demoModeCheckbox.checked;
+  if (!settings.demoMode && !isConnected) {
+    clearTargets();
+  }
   persist();
 });
 els.resetSettingsButton.addEventListener('click', () => {
@@ -233,8 +275,16 @@ canvas.addEventListener('pointerup', (event) => {
 // --- Render loop ---
 let lastRenderAt = 0;
 
+const DEMO_TICK_INTERVAL_MS = 100; // matches the real sensor's ~10Hz cadence
+
 function frame(nowMs) {
   window.requestAnimationFrame(frame);
+
+  if (settings.demoMode && !isConnected && nowMs - lastDemoTickAt >= DEMO_TICK_INTERVAL_MS) {
+    const dtMs = lastDemoTickAt ? nowMs - lastDemoTickAt : DEMO_TICK_INTERVAL_MS;
+    lastDemoTickAt = nowMs;
+    handleTargets(demoSim.tick(dtMs, settings.rangeM * 1000), nowMs);
+  }
 
   audioEngine.update(latestTargets, settings.rangeM * 1000, nowMs);
 

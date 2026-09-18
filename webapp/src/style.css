@@ -2,6 +2,7 @@
   color-scheme: dark;
   --radar-bg: #020a04;
   --radar-accent: #39ff8f;
+  --radar-secondary: #6dffb0;
   --radar-text: #a9ffcf;
   --radar-grid: rgba(70, 255, 140, 0.35);
   --radar-warning: #ff5566;
@@ -240,6 +241,13 @@ button {
   height: 18px;
 }
 
+.hint {
+  margin: -6px 0 0;
+  font-size: 12px;
+  opacity: 0.7;
+  grid-column: 1 / -1;
+}
+
 .pill {
   padding: 4px 10px;
   border-radius: 999px;
@@ -257,25 +265,46 @@ button {
   border-color: var(--radar-accent);
 }
 
-.portrait-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  text-align: center;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(14px);
-  color: var(--radar-text);
-  font-size: 18px;
-  letter-spacing: 0.06em;
+/* --- Warhammer 40k: Imperial-gothic chrome (blue/gold hazard striping,
+   squared-off edges, uppercase small-caps) layered onto the same structural
+   CSS the Alien theme uses — the radar canvas itself is themed entirely in
+   JS (radar-renderer.js / themes.js), this only re-skins surrounding UI. --- */
+[data-theme='wh40k'] .link-button,
+[data-theme='wh40k'] .overlay-card,
+[data-theme='wh40k'] .primary,
+[data-theme='wh40k'] .secondary {
+  border-radius: 3px;
+}
+
+[data-theme='wh40k'] .overlay-card {
+  border: 2px solid var(--radar-accent);
+  position: relative;
+  padding-top: 30px;
+}
+
+[data-theme='wh40k'] .overlay-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--radar-accent) 0 12px,
+    var(--radar-secondary) 12px 24px
+  );
+}
+
+[data-theme='wh40k'] .eyebrow,
+[data-theme='wh40k'] h1,
+[data-theme='wh40k'] h2,
+[data-theme='wh40k'] .primary,
+[data-theme='wh40k'] .link-button {
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-@media (orientation: portrait) {
-  .portrait-overlay {
-    display: flex;
-  }
+[data-theme='wh40k'] .eyebrow {
+  color: var(--radar-secondary);
 }

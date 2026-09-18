@@ -28,11 +28,16 @@ export class RadarRenderer {
     this._primed = false;
   }
 
+  // The 60° wedge's bounding box is a square of side `rangeMm`: at max
+  // range the two side corners sit at ±rangeMm·sin(30°) = ±0.5·rangeMm (so
+  // rangeMm wide total), while the straight-ahead point — the arc's actual
+  // top, not the corners — reaches the full rangeMm upward. Both axes need
+  // the same budget, so scaleX and scaleY both divide by the bare rangeMm.
   _project(xMm, yMm, rangeMm) {
     const originX = this.width / 2;
     const originY = this.height * 0.96;
-    const scaleX = (this.width * 0.98) / rangeMm;
-    const scaleY = (this.height * 0.92) / (rangeMm * Math.cos(HALF_FOV_RAD));
+    const scaleX = (this.width * 0.94) / rangeMm;
+    const scaleY = (this.height * 0.9) / rangeMm;
     const scale = Math.min(scaleX, scaleY);
     return { x: originX + xMm * scale, y: originY - yMm * scale, originX, originY, scale };
   }
@@ -60,7 +65,11 @@ export class RadarRenderer {
       this._drawTarget(target, theme, settings, originX, originY, scale, rangeMm, nowMs);
     }
 
-    this._drawOrigin(theme, originX, originY);
+    this._drawOrigin(theme, originX, originY, nowMs);
+
+    if (theme.scanlines) {
+      this._drawScanlines(theme, width, height);
+    }
   }
 
   _drawGrid(theme, settings, originX, originY, scale, rangeMm) {
@@ -85,13 +94,46 @@ export class RadarRenderer {
       ctx.fillText(`${i}m`, labelX + 4, labelY);
     }
 
-    ctx.strokeStyle = theme.gridColorBright;
-    ctx.beginPath();
-    ctx.moveTo(originX, originY);
-    ctx.lineTo(originX + rangeMm * scale * Math.cos(CONE_START_RAD), originY + rangeMm * scale * Math.sin(CONE_START_RAD));
-    ctx.moveTo(originX, originY);
-    ctx.lineTo(originX + rangeMm * scale * Math.cos(CONE_END_RAD), originY + rangeMm * scale * Math.sin(CONE_END_RAD));
-    ctx.stroke();
+    const edgeEndX = [
+      originX + rangeMm * scale * Math.cos(CONE_START_RAD),
+      originX + rangeMm * scale * Math.cos(CONE_END_RAD),
+    ];
+    const edgeEndY = [
+      originY + rangeMm * scale * Math.sin(CONE_START_RAD),
+      originY + rangeMm * scale * Math.sin(CONE_END_RAD),
+    ];
+
+    if (theme.edgeStyle === 'hazard') {
+      // Imperial hazard-striped cone edges: alternating accent/secondary
+      // dashes instead of a plain line.
+      for (let side = 0; side < 2; side += 1) {
+        ctx.lineWidth = 3;
+        ctx.setLineDash([10, 10]);
+        ctx.strokeStyle = theme.accentColor;
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(edgeEndX[side], edgeEndY[side]);
+        ctx.stroke();
+
+        ctx.lineDashOffset = 10;
+        ctx.strokeStyle = theme.dotColor;
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(edgeEndX[side], edgeEndY[side]);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.lineDashOffset = 0;
+    } else {
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = theme.gridColorBright;
+      ctx.beginPath();
+      ctx.moveTo(originX, originY);
+      ctx.lineTo(edgeEndX[0], edgeEndY[0]);
+      ctx.moveTo(originX, originY);
+      ctx.lineTo(edgeEndX[1], edgeEndY[1]);
+      ctx.stroke();
+    }
 
     if (theme.radarSweepStyle === 'linear') {
       // Geometric cross-hatch inside the cone, on top of the range rings.
@@ -214,18 +256,70 @@ export class RadarRenderer {
       ctx.textAlign = 'left';
       ctx.textBaseline = 'bottom';
       ctx.fillText(`${speedMps.toFixed(1)} m/s`, px + dotRadius + 4, py - dotRadius);
+
+      const xM = (target.x / 1000).toFixed(2);
+      const yM = (target.y / 1000).toFixed(2);
+      ctx.textBaseline = 'top';
+      ctx.fillText(`(${xM}, ${yM}) m`, px + dotRadius + 4, py + dotRadius + 2);
     }
 
     ctx.restore();
   }
 
-  _drawOrigin(theme, originX, originY) {
+  _drawOrigin(theme, originX, originY, nowMs) {
     const { ctx } = this;
     ctx.save();
-    ctx.fillStyle = theme.accentColor;
+
+    if (theme.originStyle === 'cog') {
+      // A slowly-turning Mechanicus cog standing in for a plain dot.
+      const teeth = 8;
+      const outerR = 9;
+      const innerR = 6;
+      const rotation = (nowMs / 4000) % (Math.PI * 2);
+
+      ctx.translate(originX, originY);
+      ctx.rotate(rotation);
+      ctx.fillStyle = theme.accentColor;
+      ctx.beginPath();
+      for (let i = 0; i < teeth * 2; i += 1) {
+        const r = i % 2 === 0 ? outerR : innerR;
+        const angle = (i / (teeth * 2)) * Math.PI * 2;
+        const x = Math.cos(angle) * r;
+        const y = Math.sin(angle) * r;
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = theme.backgroundColor;
+      ctx.beginPath();
+      ctx.arc(0, 0, 3, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = theme.accentColor;
+      ctx.beginPath();
+      ctx.arc(originX, originY, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  _drawScanlines(theme, width, height) {
+    const { ctx } = this;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.18)';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(originX, originY, 4, 0, Math.PI * 2);
-    ctx.fill();
+    for (let y = 0; y < height; y += 3) {
+      ctx.moveTo(0, y + 0.5);
+      ctx.lineTo(width, y + 0.5);
+    }
+    ctx.stroke();
     ctx.restore();
   }
 }
