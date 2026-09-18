@@ -154,6 +154,13 @@ function closeSettings() {
 
 els.settingsCloseButton.addEventListener('click', closeSettings);
 
+// Clicking the dimmed backdrop (not the card itself) closes the modal.
+els.settingsOverlay.addEventListener('click', (event) => {
+  if (event.target === els.settingsOverlay) {
+    closeSettings();
+  }
+});
+
 function applyThemeLabels() {
   const labels = getTheme(settings.theme).labels;
   els.briefingEyebrow.textContent = labels.briefingEyebrow;
